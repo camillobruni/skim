@@ -44,7 +44,28 @@
 #import "SKFDFParser.h"
 #import "NSUserDefaults_SKExtensions.h"
 
+
+FourCharCode SKScriptingAlignmentFromAlignment(NSTextAlignment alignment) {
+    switch (alignment) {
+        case NSLeftTextAlignment: return SKScriptingAlignmentLeft;
+        case NSRightTextAlignment: return SKScriptingAlignmentRight;
+        case NSCenterTextAlignment: return SKScriptingAlignmentCenter;
+        default: return SKScriptingAlignmentLeft;
+    }
+}
+
+NSTextAlignment SKAlignmentFromScriptingAlignment(FourCharCode alignment) {
+    switch (alignment) {
+        case SKScriptingAlignmentLeft: return NSLeftTextAlignment;
+        case SKScriptingAlignmentRight: return NSRightTextAlignment;
+        case SKScriptingAlignmentCenter: return NSCenterTextAlignment;
+        default: return NSLeftTextAlignment;
+    }
+}
+
+
 NSString *SKPDFAnnotationScriptingFontColorKey = @"scriptingFontColor";
+
 
 @interface PDFAnnotationFreeText (SKNPDFAnnotationFreeTextPrivateDeclarations)
 - (NSInteger)rotation;
@@ -62,6 +83,7 @@ NSString *SKPDFAnnotationScriptingFontColorKey = @"scriptingFontColor";
             [self setFont:font];
         [self setColor:[[NSUserDefaults standardUserDefaults] colorForKey:SKFreeTextNoteColorKey]];
         [self setFontColor:[[NSUserDefaults standardUserDefaults] colorForKey:SKFreeTextNoteFontColorKey]];
+        [self setAlignment:[[NSUserDefaults standardUserDefaults] integerForKey:SKFreeTextNoteAlignmentKey]];
         PDFBorder *border = [[PDFBorder allocWithZone:[self zone]] init];
         [border setLineWidth:[[NSUserDefaults standardUserDefaults] floatForKey:SKFreeTextNoteLineWidthKey]];
         [border setDashPattern:[[NSUserDefaults standardUserDefaults] arrayForKey:SKFreeTextNoteDashPatternKey]];
@@ -72,18 +94,25 @@ NSString *SKPDFAnnotationScriptingFontColorKey = @"scriptingFontColor";
     return self;
 }
 
+static inline NSString *alignmentStyleKeyword(NSTextAlignment alignment) {
+    switch (alignment) {
+        case NSLeftTextAlignment: return @"left";
+        case NSRightTextAlignment: return @"right";
+        case NSCenterTextAlignment: return @"center";
+        default: return @"left";
+    }
+}
+
 - (NSString *)fdfString {
     NSMutableString *fdfString = [[[super fdfString] mutableCopy] autorelease];
+    CGFloat r = 0.0, g = 0.0, b = 0.0, a;
+    [[self fontColor] getRed:&r green:&g blue:&b alpha:&a];
     [fdfString appendFDFName:SKFDFDefaultAppearanceKey];
-    [fdfString appendFormat:@"(/%@ %f Tf", [[self font] fontName], [[self font] pointSize]];
-    if ([[self fontColor] isEqual:[NSColor colorWithCalibratedWhite:0.0 alpha:0.0]] == NO) {
-        CGFloat r = 0.0, g = 0.0, b = 0.0, a;
-        [[self fontColor] getRed:&r green:&g blue:&b alpha:&a];
-        [fdfString appendFormat:@" %f %f %f rg", r, g, b];
-    }
-    [fdfString appendString:@")"];
+    [fdfString appendFormat:@"(/%@ %f Tf %f %f %f rg)", [self fontName], [self fontSize], r, g, b];
     [fdfString appendFDFName:SKFDFDefaultStyleKey];
-    [fdfString appendFormat:@"(font: %@ %fpt)", [[self font] fontName], [[self font] pointSize]];
+    [fdfString appendFormat:@"(font: %@ %fpt; text-align:%@; color:#%.2x%.2x%.2x)", [self fontName], [self fontSize], alignmentStyleKeyword([self alignment]), (unsigned int)(255*r), (unsigned int)(255*g), (unsigned int)(255*b)];
+    [fdfString appendFDFName:SKFDFAnnotationAlignmentKey];
+    [fdfString appendFormat:@" %ld", (long)SKFDFFreeTextAnnotationAlignmentFromPDFFreeTextAnnotationAlignment([self alignment])];
     return fdfString;
 }
 
@@ -99,6 +128,7 @@ NSString *SKPDFAnnotationScriptingFontColorKey = @"scriptingFontColor";
         NSMutableSet *mutableKeys = [[super keysForValuesToObserveForUndo] mutableCopy];
         [mutableKeys addObject:SKNPDFAnnotationFontKey];
         [mutableKeys addObject:SKNPDFAnnotationFontColorKey];
+        [mutableKeys addObject:SKNPDFAnnotationAlignmentKey];
         freeTextKeys = [mutableKeys copy];
         [mutableKeys release];
     }
@@ -164,6 +194,16 @@ NSString *SKPDFAnnotationScriptingFontColorKey = @"scriptingFontColor";
 - (void)setScriptingFontColor:(NSColor *)newScriptingFontColor {
     if ([self isEditable]) {
         [self setFontColor:newScriptingFontColor];
+    }
+}
+
+- (FourCharCode)scriptingAlignment {
+    return SKScriptingAlignmentFromAlignment([self alignment]);
+}
+
+- (void)setScriptingAlignment:(FourCharCode)alignment {
+    if ([self isEditable]) {
+        [self setAlignment:SKAlignmentFromScriptingAlignment(alignment)];
     }
 }
 

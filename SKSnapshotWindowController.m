@@ -218,7 +218,7 @@ static char SKSnaphotWindowDefaultsObservationContext;
         [self performSelector:@selector(notifiyDidFinishSetup) withObject:nil afterDelay:0.1];
 }
 
-- (void)setPdfDocument:(PDFDocument *)pdfDocument scaleFactor:(CGFloat)factor goToPageNumber:(NSInteger)pageNum rect:(NSRect)rect autoFits:(BOOL)autoFits {
+- (void)setPdfDocument:(PDFDocument *)pdfDocument goToPageNumber:(NSInteger)pageNum rect:(NSRect)rect scaleFactor:(CGFloat)factor autoFits:(BOOL)autoFits {
     [self window];
     
     [pdfView setScaleFactor:factor];
@@ -260,9 +260,9 @@ static char SKSnaphotWindowDefaultsObservationContext;
 
 - (void)setPdfDocument:(PDFDocument *)pdfDocument setup:(NSDictionary *)setup {
     [self setPdfDocument:pdfDocument
-             scaleFactor:[[setup objectForKey:SCALEFACTOR_KEY] doubleValue]
           goToPageNumber:[[setup objectForKey:PAGE_KEY] unsignedIntegerValue]
                     rect:NSRectFromString([setup objectForKey:RECT_KEY])
+             scaleFactor:[[setup objectForKey:SCALEFACTOR_KEY] doubleValue]
                 autoFits:[[setup objectForKey:AUTOFITS_KEY] boolValue]];
     
     if ([setup objectForKey:WINDOWFRAME_KEY])
@@ -480,8 +480,8 @@ static char SKSnaphotWindowDefaultsObservationContext;
 }
 
 - (void)miniaturize {
-    if ([[self delegate] respondsToSelector:@selector(snapshotControllerTargetRectForMiniaturize:)]) {
-        NSRect startRect, endRect, dockRect = [[self delegate] snapshotControllerTargetRectForMiniaturize:self];
+    if ([[self delegate] respondsToSelector:@selector(snapshotController:miniaturizedRect:)]) {
+        NSRect startRect, endRect, dockRect = [[self delegate] snapshotController:self miniaturizedRect:YES];
         
         [self getMiniRect:&endRect maxiRect:&startRect forDockingRect:dockRect];
         
@@ -500,8 +500,8 @@ static char SKSnaphotWindowDefaultsObservationContext;
 }
 
 - (void)deminiaturize {
-    if ([[self delegate] respondsToSelector:@selector(snapshotControllerSourceRectForDeminiaturize:)]) {
-        NSRect startRect, endRect, dockRect = [[self delegate] snapshotControllerSourceRectForDeminiaturize:self];
+    if ([[self delegate] respondsToSelector:@selector(snapshotController:miniaturizedRect:)]) {
+        NSRect startRect, endRect, dockRect = [[self delegate] snapshotController:self miniaturizedRect:NO];
         
         [self getMiniRect:&startRect maxiRect:&endRect forDockingRect:dockRect];
         

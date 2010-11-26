@@ -133,8 +133,8 @@
 #define RIGHTSIDEPANEWIDTH_KEY      @"rightSidePaneWidth"
 #define SCALEFACTOR_KEY             @"scaleFactor"
 #define AUTOSCALES_KEY              @"autoScales"
-#define DISPLAYPAGEBREAKS_KEY       @"displaysPageBreaks"
-#define DISPLAYASBOOK_KEY           @"displaysAsBook" 
+#define DISPLAYSPAGEBREAKS_KEY      @"displaysPageBreaks"
+#define DISPLAYSASBOOK_KEY          @"displaysAsBook" 
 #define DISPLAYMODE_KEY             @"displayMode"
 #define DISPLAYBOX_KEY              @"displayBox"
 #define HASHORIZONTALSCROLLER_KEY   @"hasHorizontalScroller"
@@ -146,7 +146,7 @@
 
 #define SKMainWindowFrameAutosaveName @"SKMainWindow"
 
-static char SKNPDFAnnotationPropertiesObservationContext;
+static char SKPDFAnnotationPropertiesObservationContext;
 
 static char SKMainWindowDefaultsObservationContext;
 
@@ -342,6 +342,12 @@ static void addSideSubview(NSView *view, NSView *contentView, BOOL usesDrawers) 
     [leftSideController.findTableView setTarget:self];
     [leftSideController.groupedFindTableView setDoubleAction:@selector(goToSelectedFindResults:)];
     [leftSideController.groupedFindTableView setTarget:self];
+    
+    NSFont *font = [NSFont systemFontOfSize:[[NSUserDefaults standardUserDefaults] floatForKey:SKTableFontSizeKey]];
+    [leftSideController.tocOutlineView setFont:font];
+    [rightSideController.noteOutlineView setFont:font];
+    [leftSideController.findTableView setFont:font];
+    [leftSideController.groupedFindTableView setFont:font];
     
     if (mwcFlags.usesDrawers) {
         leftSideDrawer = [[NSDrawer alloc] initWithContentSize:[leftSideContentView frame].size preferredEdge:NSMinXEdge];
@@ -561,9 +567,9 @@ static void addSideSubview(NSView *view, NSView *contentView, BOOL usesDrawers) 
         [pdfView setAutoScales:[number boolValue]];
     if ([pdfView autoScales] == NO && (number = [setup objectForKey:SCALEFACTOR_KEY]))
         [pdfView setScaleFactor:[number doubleValue]];
-    if (number = [setup objectForKey:DISPLAYPAGEBREAKS_KEY])
+    if (number = [setup objectForKey:DISPLAYSPAGEBREAKS_KEY])
         [pdfView setDisplaysPageBreaks:[number boolValue]];
-    if (number = [setup objectForKey:DISPLAYASBOOK_KEY])
+    if (number = [setup objectForKey:DISPLAYSASBOOK_KEY])
         [pdfView setDisplaysAsBook:[number boolValue]];
     if (number = [setup objectForKey:DISPLAYMODE_KEY])
         [pdfView setDisplayMode:[number integerValue]];
@@ -574,16 +580,16 @@ static void addSideSubview(NSView *view, NSView *contentView, BOOL usesDrawers) 
 - (NSDictionary *)currentPDFSettings {
     NSMutableDictionary *setup = [NSMutableDictionary dictionary];
     
-    if ([self interactionMode] == SKPresentationMode) {
-        [setup setDictionary:savedNormalSetup];
-        [setup removeObjectsForKeys:[NSArray arrayWithObjects:HASHORIZONTALSCROLLER_KEY, HASVERTICALSCROLLER_KEY, AUTOHIDESSCROLLERS_KEY, nil]];
-    } else {
-        [setup setObject:[NSNumber numberWithBool:[pdfView displaysPageBreaks]] forKey:DISPLAYPAGEBREAKS_KEY];
-        [setup setObject:[NSNumber numberWithBool:[pdfView displaysAsBook]] forKey:DISPLAYASBOOK_KEY];
+    if ([self interactionMode] == SKNormalMode) {
+        [setup setObject:[NSNumber numberWithBool:[pdfView displaysPageBreaks]] forKey:DISPLAYSPAGEBREAKS_KEY];
+        [setup setObject:[NSNumber numberWithBool:[pdfView displaysAsBook]] forKey:DISPLAYSASBOOK_KEY];
         [setup setObject:[NSNumber numberWithInteger:[pdfView displayBox]] forKey:DISPLAYBOX_KEY];
         [setup setObject:[NSNumber numberWithDouble:[pdfView scaleFactor]] forKey:SCALEFACTOR_KEY];
         [setup setObject:[NSNumber numberWithBool:[pdfView autoScales]] forKey:AUTOSCALES_KEY];
         [setup setObject:[NSNumber numberWithInteger:[pdfView displayMode]] forKey:DISPLAYMODE_KEY];
+    } else {
+        [setup setDictionary:savedNormalSetup];
+        [setup removeObjectsForKeys:[NSArray arrayWithObjects:HASHORIZONTALSCROLLER_KEY, HASVERTICALSCROLLER_KEY, AUTOHIDESSCROLLERS_KEY, nil]];
     }
     
     return setup;
@@ -1285,6 +1291,9 @@ static void addSideSubview(NSView *view, NSView *contentView, BOOL usesDrawers) 
 
 - (void)enterPresentationMode {
     NSScrollView *scrollView = [[pdfView documentView] enclosingScrollView];
+    [savedNormalSetup setObject:[NSNumber numberWithBool:[scrollView hasHorizontalScroller]] forKey:HASHORIZONTALSCROLLER_KEY];
+    [savedNormalSetup setObject:[NSNumber numberWithBool:[scrollView hasVerticalScroller]] forKey:HASVERTICALSCROLLER_KEY];
+    [savedNormalSetup setObject:[NSNumber numberWithBool:[scrollView autohidesScrollers]] forKey:AUTOHIDESSCROLLERS_KEY];
     // Set up presentation mode
     [pdfView setBackgroundColor:[NSColor clearColor]];
     [pdfView setAutoScales:YES];
@@ -1317,13 +1326,6 @@ static void addSideSubview(NSView *view, NSView *contentView, BOOL usesDrawers) 
 }
 
 - (void)fadeInFullScreenWindowWithBackgroundColor:(NSColor *)backgroundColor level:(NSInteger)level {
-    // remember normal setup to return to
-    NSScrollView *scrollView = [[pdfView documentView] enclosingScrollView];
-    [savedNormalSetup setDictionary:[self currentPDFSettings]];
-    [savedNormalSetup setObject:[NSNumber numberWithBool:[scrollView hasHorizontalScroller]] forKey:HASHORIZONTALSCROLLER_KEY];
-    [savedNormalSetup setObject:[NSNumber numberWithBool:[scrollView hasVerticalScroller]] forKey:HASVERTICALSCROLLER_KEY];
-    [savedNormalSetup setObject:[NSNumber numberWithBool:[scrollView autohidesScrollers]] forKey:AUTOHIDESSCROLLERS_KEY];
-    
     if ([[mainWindow firstResponder] isDescendantOf:pdfSplitView])
         [mainWindow makeFirstResponder:nil];
     
@@ -1430,6 +1432,10 @@ static void addSideSubview(NSView *view, NSView *contentView, BOOL usesDrawers) 
     
     mwcFlags.isSwitchingFullScreen = 1;
     
+    // remember normal setup to return to, we must do this before changing the interactionMode
+    if (wasInteractionMode == SKNormalMode)
+        [savedNormalSetup setDictionary:[self currentPDFSettings]];
+    
     interactionMode = SKFullScreenMode;
     
     if (wasInteractionMode == SKPresentationMode) {
@@ -1482,6 +1488,10 @@ static void addSideSubview(NSView *view, NSView *contentView, BOOL usesDrawers) 
     NSColor *backgroundColor = [NSColor blackColor];
     NSInteger level = [[NSUserDefaults standardUserDefaults] boolForKey:SKUseNormalLevelForPresentationKey] ? NSNormalWindowLevel : NSPopUpMenuWindowLevel;
     PDFPage *page = [[self pdfView] currentPage];
+    
+    // remember normal setup to return to, we must do this before changing the interactionMode
+    if (wasInteractionMode == SKNormalMode)
+        [savedNormalSetup setDictionary:[self currentPDFSettings]];
     
     mwcFlags.isSwitchingFullScreen = 1;
     
@@ -1977,22 +1987,24 @@ static void removeTemporaryAnnotations(const void *annotation, void *context)
 
 - (void)registerForDocumentNotifications {
     NSNotificationCenter *nc = [NSNotificationCenter defaultCenter];
+    PDFDocument *pdfDoc = [pdfView document];
     [nc addObserver:self selector:@selector(handleDocumentBeginWrite:) 
-                             name:PDFDocumentDidBeginWriteNotification object:[pdfView document]];
+                             name:PDFDocumentDidBeginWriteNotification object:pdfDoc];
     [nc addObserver:self selector:@selector(handleDocumentEndWrite:) 
-                             name:PDFDocumentDidEndWriteNotification object:[pdfView document]];
+                             name:PDFDocumentDidEndWriteNotification object:pdfDoc];
     [nc addObserver:self selector:@selector(handleDocumentEndPageWrite:) 
-                             name:PDFDocumentDidEndPageWriteNotification object:[pdfView document]];
+                             name:PDFDocumentDidEndPageWriteNotification object:pdfDoc];
     [nc addObserver:self selector:@selector(handlePageBoundsDidChangeNotification:) 
-                             name:SKPDFPageBoundsDidChangeNotification object:[pdfView document]];
+                             name:SKPDFPageBoundsDidChangeNotification object:pdfDoc];
 }
 
 - (void)unregisterForDocumentNotifications {
     NSNotificationCenter *nc = [NSNotificationCenter defaultCenter];
-    [nc removeObserver:self name:PDFDocumentDidBeginWriteNotification object:[pdfView document]];
-    [nc removeObserver:self name:PDFDocumentDidEndWriteNotification object:[pdfView document]];
-    [nc removeObserver:self name:PDFDocumentDidEndPageWriteNotification object:[pdfView document]];
-    [nc removeObserver:self name:SKPDFPageBoundsDidChangeNotification object:[pdfView document]];
+    PDFDocument *pdfDoc = [pdfView document];
+    [nc removeObserver:self name:PDFDocumentDidBeginWriteNotification object:pdfDoc];
+    [nc removeObserver:self name:PDFDocumentDidEndWriteNotification object:pdfDoc];
+    [nc removeObserver:self name:PDFDocumentDidEndPageWriteNotification object:pdfDoc];
+    [nc removeObserver:self name:SKPDFPageBoundsDidChangeNotification object:pdfDoc];
 }
 
 #pragma mark Subwindows
@@ -2004,9 +2016,9 @@ static void removeTemporaryAnnotations(const void *annotation, void *context)
     [swc setDelegate:self];
     
     [swc setPdfDocument:[pdfView document]
-            scaleFactor:scaleFactor
          goToPageNumber:pageNum
                    rect:rect
+            scaleFactor:scaleFactor
                autoFits:autoFits];
     
     [swc setForceOnTop:[self interactionMode] != SKNormalMode];
@@ -2065,18 +2077,9 @@ static void removeTemporaryAnnotations(const void *annotation, void *context)
     [rightSideWindow collapse];
 }
 
-- (NSRect)rowRectForSnapshotController:(SKSnapshotWindowController *)controller scrollToVisible:(BOOL)shouldScroll {
+- (NSRect)snapshotController:(SKSnapshotWindowController *)controller miniaturizedRect:(BOOL)isMiniaturize {
     NSInteger row = [[rightSideController.snapshotArrayController arrangedObjects] indexOfObject:controller];
-    if (shouldScroll)
-        [rightSideController.snapshotTableView scrollRowToVisible:row];
-    NSRect rect = [rightSideController.snapshotTableView frameOfCellAtColumn:0 row:row];
-    rect = [rightSideController.snapshotTableView convertRect:rect toView:nil];
-    rect.origin = [[rightSideController.snapshotTableView window] convertBaseToScreen:rect.origin];
-    return rect;
-}
-
-- (NSRect)snapshotControllerTargetRectForMiniaturize:(SKSnapshotWindowController *)controller {
-    if ([self interactionMode] != SKPresentationMode) {
+    if (isMiniaturize && [self interactionMode] != SKPresentationMode) {
         if ([self interactionMode] == SKNormalMode && [self rightSidePaneIsOpen] == NO) {
             [self toggleRightSidePane:self];
         } else if ([self interactionMode] == SKFullScreenMode && ([rightSideWindow state] == NSDrawerClosedState || [rightSideWindow state] == NSDrawerClosingState)) {
@@ -2084,14 +2087,12 @@ static void removeTemporaryAnnotations(const void *annotation, void *context)
             [NSTimer scheduledTimerWithTimeInterval:1.0 target:self selector:@selector(hideRightSideWindow:) userInfo:NULL repeats:NO];
         }
         [self setRightSidePaneState:SKSnapshotSidePaneState];
+        [rightSideController.snapshotTableView scrollRowToVisible:row];
     }
-    return [self rowRectForSnapshotController:controller scrollToVisible:YES];
-}
-
-- (NSRect)snapshotControllerSourceRectForDeminiaturize:(SKSnapshotWindowController *)controller {
-    if ([[[self document] windowControllers] containsObject:controller] == NO)
-        [[self document] addWindowController:controller];
-    return [self rowRectForSnapshotController:controller scrollToVisible:NO];
+    NSRect rect = [rightSideController.snapshotTableView frameOfCellAtColumn:0 row:row];
+    rect = [rightSideController.snapshotTableView convertRect:rect toView:nil];
+    rect.origin = [[rightSideController.snapshotTableView window] convertBaseToScreen:rect.origin];
+    return rect;
 }
 
 - (void)showNote:(PDFAnnotation *)annotation {
@@ -2144,7 +2145,7 @@ static void removeTemporaryAnnotations(const void *annotation, void *context)
     for (PDFAnnotation *note in newNotes) {
         for (NSString *key in [note keysForValuesToObserveForUndo]) {
             // We use NSKeyValueObservingOptionOld because when something changes we want to record the old value, which is what has to be set in the undo operation. We use NSKeyValueObservingOptionNew because we compare the new value against the old value in an attempt to ignore changes that aren't really changes.
-            [note addObserver:self forKeyPath:key options:(NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld) context:&SKNPDFAnnotationPropertiesObservationContext];
+            [note addObserver:self forKeyPath:key options:(NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld) context:&SKPDFAnnotationPropertiesObservationContext];
         }
     }
 }
@@ -2232,10 +2233,16 @@ static void removeTemporaryAnnotations(const void *annotation, void *context)
         } else if ([key isEqualToString:SKTableFontSizeKey]) {
             NSFont *font = [NSFont systemFontOfSize:[[NSUserDefaults standardUserDefaults] floatForKey:SKTableFontSizeKey]];
             [leftSideController.tocOutlineView setFont:font];
+            [rightSideController.noteOutlineView setFont:font];
+            [leftSideController.findTableView setFont:font];
+            [leftSideController.groupedFindTableView setFont:font];
             [self updatePageColumnWidthForTableView:leftSideController.tocOutlineView];
+            [self updatePageColumnWidthForTableView:rightSideController.noteOutlineView];
+            [self updatePageColumnWidthForTableView:leftSideController.findTableView];
+            [self updatePageColumnWidthForTableView:leftSideController.groupedFindTableView];
         }
         
-    } else if (context == &SKNPDFAnnotationPropertiesObservationContext) {
+    } else if (context == &SKPDFAnnotationPropertiesObservationContext) {
         
         // The value of some note's property has changed
         PDFAnnotation *note = (PDFAnnotation *)object;

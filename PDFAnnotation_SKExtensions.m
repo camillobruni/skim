@@ -104,7 +104,7 @@ enum {
     SKVersionNumber *PDFKitVersion = [[[SKVersionNumber alloc] initWithVersionString:[[NSBundle bundleForClass:self] objectForInfoDictionaryKey:(NSString *)kCFBundleVersionKey]] autorelease];
     SKVersionNumber *minVersion = [[[SKVersionNumber alloc] initWithVersionString:@"2.5"] autorelease];
     SKVersionNumber *maxVersion = [[[SKVersionNumber alloc] initWithVersionString:@"2.5.1"] autorelease];
-    if ([PDFKitVersion compareToVersionNumber:minVersion] != NSOrderedAscending && [PDFKitVersion compareToVersionNumber:maxVersion] != NSOrderedDescending)
+    if ([PDFKitVersion compare:minVersion] != NSOrderedAscending && [PDFKitVersion compare:maxVersion] != NSOrderedDescending)
         SKPDFAnnotationLeaksBorder = YES;
 }
 
@@ -428,6 +428,10 @@ enum {
 
 - (NSColor *)scriptingFontColor {
     return nil;
+}
+
+- (FourCharCode)scriptingAlignment {
+    return SKScriptingAlignmentLeft;
 }
 
 - (FourCharCode)scriptingBorderStyle {

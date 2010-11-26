@@ -41,10 +41,10 @@
 #import "SKDragImageView.h"
 
 
-@class PDFAnnotation, SKStatusBar, SKGradientView;
+@class PDFAnnotation, SKStatusBar, SKGradientView, SKNoteTextView;
 
 @interface SKNoteWindowController : SKWindowController <NSWindowDelegate, SKDragImageViewDelegate> {
-    NSTextView *textView;
+    SKNoteTextView *textView;
     SKGradientView *gradientView;
     SKDragImageView *imageView;
     SKStatusBar *statusBar;
@@ -62,7 +62,7 @@
     NSUndoManager *textViewUndoManager;
 }
 
-@property (nonatomic, retain) IBOutlet NSTextView *textView;
+@property (nonatomic, retain) IBOutlet SKNoteTextView *textView;
 @property (nonatomic, retain) IBOutlet SKGradientView *gradientView;
 @property (nonatomic, retain) IBOutlet SKDragImageView *imageView;
 @property (nonatomic, retain) IBOutlet SKStatusBar *statusBar;

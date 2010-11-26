@@ -844,6 +844,10 @@
                 description="The default font color used for new text notes.">
                 <cocoa key="defaultTextNoteFontColor"/>
             </property>
+            <property name="default text note alignment" type="text alignment" code="DNAl"
+                description="The default alignment used for new text notes.">
+                <cocoa key="defaultAlignment"/>
+            </property>
             <property name="default note icon type" type="icon type" code="DNtI"
                 description="The default icon type used for new anchored notes.">
                 <cocoa key="defaultIconType"/>
@@ -1056,6 +1060,10 @@
                 description="The font size in points of a text note.">
                 <cocoa key="fontSize"/>
             </property>
+            <property name="alignment" code="Algn" type="text alignment"
+                description="The text alignment of a text note.">
+                <cocoa key="scriptingAlignment"/>
+            </property>
             <property name="font color" code="FntC" type="RGBA color"
                 description="The text color of a text note.">
                 <cocoa key="scriptingFontColor"/>
@@ -1069,7 +1077,7 @@
                 <cocoa key="scriptingIconType"/>
             </property>
             <property name="interior color" code="IClr" type="RGBA color"
-                description="The fill color of a circle or box.">
+                description="The fill color of a circle, box, or line.">
                 <cocoa key="scriptingInteriorColor"/>
             </property>
             <property name="line width" code="LnWd" type="real"
@@ -1338,6 +1346,10 @@
                 description="Default box fill color.">
                 <cocoa key="SquareInterior"/>
             </property>
+            <property name="line note interior color" code="CLiI" type="RGBA color"
+                description="Default line fill color.">
+                <cocoa key="LineInterior"/>
+            </property>
             <property name="text note font color" code="CTxF" type="RGBA color"
                 description="Default text note font color.">
                 <cocoa key="FreeTextFont"/>
@@ -1526,6 +1538,15 @@
                 description="Line."/>
             <enumerator name="freehand note" code="NInk"
                 description="Freehand."/>
+        </enumeration>
+
+        <enumeration name="text alignment" code="TAlE">
+            <enumerator name="left alignment" code="LeTA"
+                description="Left text alignment."/>
+            <enumerator name="right alignment" code="RiTA"
+                description="Right text alignment."/>
+            <enumerator name="center alignment" code="CeTA"
+                description="Center text alignment."/>
         </enumeration>
 
         <enumeration name="icon type" code="ITpE">

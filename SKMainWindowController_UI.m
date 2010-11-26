@@ -1099,6 +1099,11 @@
 - (void)discardEditing {
     [rightSideController.noteOutlineView abortEditing];
     [pdfView discardEditing];
+    // when using abortEditing the control does not call the controlTextDidEndEditing: delegate method
+    if (mwcFlags.isEditingTable || mwcFlags.isEditingPDF)
+        [[self document] objectDidEndEditing:self];
+    mwcFlags.isEditingTable = NO;
+    mwcFlags.isEditingPDF = NO;
 }
 
 - (BOOL)commitEditing {
@@ -1342,6 +1347,9 @@ static NSArray *allMainDocumentPDFViews() {
     } else if (action == @selector(editNote:)) {
         PDFAnnotation *annotation = [pdfView activeAnnotation];
         return [self interactionMode] != SKPresentationMode && [annotation isSkimNote] && ([annotation isEditable]);
+    } else if (action == @selector(alignLeft:) || action == @selector(alignRight:) || action == @selector(alignCenter:)) {
+        PDFAnnotation *annotation = [pdfView activeAnnotation];
+        return [self interactionMode] != SKPresentationMode && [annotation isSkimNote] && ([annotation isEditable]) && [annotation respondsToSelector:@selector(setAlignment:)];
     } else if (action == @selector(toggleHideNotes:)) {
         if ([pdfView hideNotes])
             [menuItem setTitle:NSLocalizedString(@"Show Notes", @"Menu item title")];

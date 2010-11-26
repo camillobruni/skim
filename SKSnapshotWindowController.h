@@ -64,7 +64,7 @@ extern NSString *SKSnapshotCurrentSetupKey;
 
 @property (nonatomic, readonly) NSAttributedString *thumbnailAttachment, *thumbnail512Attachment, *thumbnail256Attachment, *thumbnail128Attachment, *thumbnail64Attachment, *thumbnail32Attachment;
 
-- (void)setPdfDocument:(PDFDocument *)pdfDocument scaleFactor:(CGFloat)factor goToPageNumber:(NSInteger)pageNum rect:(NSRect)rect autoFits:(BOOL)autoFits;
+- (void)setPdfDocument:(PDFDocument *)pdfDocument goToPageNumber:(NSInteger)pageNum rect:(NSRect)rect scaleFactor:(CGFloat)factor autoFits:(BOOL)autoFits;
 - (void)setPdfDocument:(PDFDocument *)pdfDocument setup:(NSDictionary *)setup;
 
 - (BOOL)isPageVisible:(PDFPage *)page;
@@ -98,8 +98,7 @@ extern NSString *SKSnapshotCurrentSetupKey;
 - (void)snapshotControllerDidFinishSetup:(SKSnapshotWindowController *)controller;
 - (void)snapshotControllerWillClose:(SKSnapshotWindowController *)controller;
 - (void)snapshotControllerDidChange:(SKSnapshotWindowController *)controller;
-- (NSRect)snapshotControllerTargetRectForMiniaturize:(SKSnapshotWindowController *)controller;
-- (NSRect)snapshotControllerSourceRectForDeminiaturize:(SKSnapshotWindowController *)controller;
+- (NSRect)snapshotController:(SKSnapshotWindowController *)controller miniaturizedRect:(BOOL)isMiniaturize;
 
 @end
 

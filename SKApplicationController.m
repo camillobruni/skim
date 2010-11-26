@@ -70,6 +70,7 @@
 #import <SkimNotes/SkimNotes.h>
 #import "PDFAnnotation_SKExtensions.h"
 #import "PDFAnnotationLine_SKExtensions.h"
+#import "PDFAnnotationFreeText_SKExtensions.h"
 #import "PDFAnnotationText_SKExtensions.h"
 #import "SKRemoteStateWindow.h"
 #import "NSMenu_SKExtensions.h"
@@ -100,6 +101,7 @@
 
 #define SKCircleInteriorString  @"CircleInterior"
 #define SKSquareInteriorString  @"SquareInterior"
+#define SKLineInteriorString    @"LineInterior"
 #define SKFreeTextFontString    @"FreeTextFont"
 
 @interface SKApplicationController (SKPrivate)
@@ -109,7 +111,7 @@
 
 @implementation SKApplicationController
 
-@dynamic defaultPdfViewSettings, defaultFullScreenPdfViewSettings, backgroundColor, fullScreenBackgroundColor, pageBackgroundColor, defaultNoteColors, defaultLineWidths, defaultLineStyles, defaultDashPatterns, defaultStartLineStyle, defaultEndLineStyle, defaultFontNames, defaultFontSizes, defaultTextNoteFontColor, defaultIconType;
+@dynamic defaultPdfViewSettings, defaultFullScreenPdfViewSettings, backgroundColor, fullScreenBackgroundColor, pageBackgroundColor, defaultNoteColors, defaultLineWidths, defaultLineStyles, defaultDashPatterns, defaultStartLineStyle, defaultEndLineStyle, defaultFontNames, defaultFontSizes, defaultTextNoteFontColor, defaultAlignment, defaultIconType;
 
 + (void)initialize{
     SKINITIALIZE;
@@ -454,7 +456,7 @@
     if (applicationScriptingKeys == nil)
         applicationScriptingKeys = [[NSSet alloc] initWithObjects:@"bookmarks", 
             @"defaultPdfViewSettings", @"defaultFullScreenPdfViewSettings", @"backgroundColor", @"fullScreenBackgroundColor", @"pageBackgroundColor", 
-            @"defaultNoteColors", @"defaultLineWidths", @"defaultLineStyles", @"defaultDashPatterns", @"defaultStartLineStyle", @"defaultEndLineStyle", @"defaultFontNames", @"defaultFontSizes", @"defaultTextNoteFontColor", @"defaultIconType", nil];
+            @"defaultNoteColors", @"defaultLineWidths", @"defaultLineStyles", @"defaultDashPatterns", @"defaultStartLineStyle", @"defaultEndLineStyle", @"defaultFontNames", @"defaultFontSizes", @"defaultTextNoteFontColor", @"defaultAlignment", @"defaultIconType", nil];
 	return [applicationScriptingKeys containsObject:key];
 }
 
@@ -547,6 +549,7 @@
         [sud colorForKey:SKInkNoteColorKey], SKNInkString, 
         [sud colorForKey:SKCircleNoteInteriorColorKey], SKCircleInteriorString, 
         [sud colorForKey:SKSquareNoteInteriorColorKey], SKSquareInteriorString, 
+        [sud colorForKey:SKLineNoteInteriorColorKey], SKLineInteriorString, 
         [sud colorForKey:SKFreeTextNoteFontColorKey], SKFreeTextFontString, 
         nil];
 }
@@ -576,6 +579,8 @@
         [sud setColor:color forKey:SKCircleNoteInteriorColorKey];
     if (color = [colorDict objectForKey:SKSquareInteriorString])
         [sud setColor:color forKey:SKSquareNoteInteriorColorKey];
+    if (color = [colorDict objectForKey:SKLineInteriorString])
+        [sud setColor:color forKey:SKLineNoteInteriorColorKey];
     if (color = [colorDict objectForKey:SKFreeTextFontString])
         [sud setColor:color forKey:SKFreeTextNoteFontColorKey];
 }
@@ -714,6 +719,14 @@
 
 - (void)setDefaultEndLineStyle:(FourCharCode)style {
     [[NSUserDefaults standardUserDefaults] setInteger:SKLineStyleFromScriptingLineStyle(style) forKey:SKLineNoteEndLineStyleKey];
+}
+
+- (FourCharCode)defaultAlignment {
+    return SKScriptingAlignmentFromAlignment([[NSUserDefaults standardUserDefaults] integerForKey:SKFreeTextNoteAlignmentKey]);
+}
+
+- (void)setDefaultAlignment:(FourCharCode)alignment {
+    [[NSUserDefaults standardUserDefaults] setInteger:SKAlignmentFromScriptingAlignment(alignment) forKey:SKFreeTextNoteAlignmentKey];
 }
 
 - (FourCharCode)defaultIconType {

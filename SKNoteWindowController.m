@@ -52,6 +52,7 @@
 #import "NSString_SKExtensions.h"
 #import "SKGradientView.h"
 #import "NSGeometry_SKExtensions.h"
+#import "SKNoteTextView.h"
 
 #define EM_DASH_CHARACTER 0x2014
 
@@ -119,6 +120,8 @@ static NSImage *noteIcons[7] = {nil, nil, nil, nil, nil, nil, nil};
 }
 
 - (void)dealloc {
+    @try { [textView unbind:[self isNoteType] ? @"attributedString" : @"value"]; }
+    @catch (id e) {}
     [note removeObserver:self forKeyPath:SKNPDFAnnotationPageKey];
     [note removeObserver:self forKeyPath:SKNPDFAnnotationBoundsKey];
     [note removeObserver:self forKeyPath:SKNPDFAnnotationStringKey];
@@ -158,13 +161,12 @@ static NSImage *noteIcons[7] = {nil, nil, nil, nil, nil, nil, nil};
     if ([self isNoteType]) {
         [gradientView setEdges:SKMinYEdgeMask];
         
-        if ([[textView string] length] == 0) {
-            NSString *fontName = [[NSUserDefaults standardUserDefaults] stringForKey:SKAnchoredNoteFontNameKey];
-            CGFloat fontSize = [[NSUserDefaults standardUserDefaults] floatForKey:SKAnchoredNoteFontSizeKey];
-            NSFont *font = fontName ? [NSFont fontWithName:fontName size:fontSize] : nil;
-            if (font)
-                [textView setFont:font];
-        }
+        NSString *fontName = [[NSUserDefaults standardUserDefaults] stringForKey:SKAnchoredNoteFontNameKey];
+        CGFloat fontSize = [[NSUserDefaults standardUserDefaults] floatForKey:SKAnchoredNoteFontSizeKey];
+        NSFont *font = fontName ? [NSFont fontWithName:fontName size:fontSize] : nil;
+        if (font)
+            [textView setFont:font];
+        [textView bind:@"attributedString" toObject:noteController withKeyPath:@"selection.text" options:nil];
         
         for (NSMenuItem *item in [iconTypePopUpButton itemArray])
             [item setImage:noteIcons[[item tag]]];
@@ -176,8 +178,8 @@ static NSImage *noteIcons[7] = {nil, nil, nil, nil, nil, nil, nil};
         
         NSRect frame = NSUnionRect([[textView enclosingScrollView] frame], [gradientView frame]);
         [[textView enclosingScrollView] setFrame:frame];
-        [textView unbind:@"attributedString"];
         [textView setRichText:NO];
+        [textView setUsesDefaultFontSize:YES];
         [textView bind:@"value" toObject:noteController withKeyPath:@"selection.string" options:nil];
         
         NSSize minimumSize = [[self window] minSize];
@@ -355,4 +357,5 @@ static NSImage *noteIcons[7] = {nil, nil, nil, nil, nil, nil, nil};
         [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
     }
 }
+
 @end

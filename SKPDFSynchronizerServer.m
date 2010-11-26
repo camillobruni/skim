@@ -526,18 +526,22 @@ struct SKServerFlags {
     BOOL rv = NO;
     if (scanner)
         synctex_scanner_free(scanner);
-    scanner = synctex_scanner_new_with_output_file([theFileName fileSystemRepresentation]);
+    scanner = synctex_scanner_new_with_output_file([theFileName fileSystemRepresentation], NULL, 1);
     if (scanner) {
         [self setSyncFileName:[self sourceFileForFileSystemRepresentation:synctex_scanner_get_synctex(scanner) isTeX:NO]];
         if (filenames)
             [filenames removeAllObjects];
         else
             filenames = [[NSMapTable alloc] initForCaseInsensitiveStringKeys];
+        const char *fileRep;
         NSString *filename;
         synctex_node_t node = synctex_scanner_input(scanner);
         do {
-            filename = [(NSString *)CFStringCreateWithFileSystemRepresentation(NULL, synctex_scanner_get_name(scanner, synctex_node_tag(node))) autorelease];
-            [filenames setObject:filename forKey:[self sourceFileForFileName:filename isTeX:YES removeQuotes:NO]];
+            if (fileRep = synctex_scanner_get_name(scanner, synctex_node_tag(node))) {
+                filename = (NSString *)CFStringCreateWithFileSystemRepresentation(NULL, fileRep);
+                [filenames setObject:filename forKey:[self sourceFileForFileName:filename isTeX:YES removeQuotes:NO]];
+                [filename release];
+            }
         } while (node = synctex_node_next(node));
         isPdfsync = NO;
         rv = [self shouldKeepRunning];
@@ -548,11 +552,14 @@ struct SKServerFlags {
 - (BOOL)synctexFindFileLine:(NSInteger *)linePtr file:(NSString **)filePtr forLocation:(NSPoint)point inRect:(NSRect)rect pageBounds:(NSRect)bounds atPageIndex:(NSUInteger)pageIndex {
     BOOL rv = NO;
     if (synctex_edit_query(scanner, (int)pageIndex + 1, point.x, NSMaxY(bounds) - point.y) > 0) {
-        synctex_node_t node = synctex_next_result(scanner);
-        if (node) {
-            *linePtr = MAX(synctex_node_line(node), 1) - 1;
-            *filePtr = [self sourceFileForFileSystemRepresentation:synctex_scanner_get_name(scanner, synctex_node_tag(node)) isTeX:YES];
-            rv = YES;
+        synctex_node_t node;
+        const char *file;
+        while (rv == NO && (node = synctex_next_result(scanner))) {
+            if (file = synctex_scanner_get_name(scanner, synctex_node_tag(node))) {
+                *linePtr = MAX(synctex_node_line(node), 1) - 1;
+                *filePtr = [self sourceFileForFileSystemRepresentation:file isTeX:YES];
+                rv = YES;
+            }
         }
     }
     return rv;

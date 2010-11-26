@@ -53,6 +53,8 @@
 
 NSString *SKDocumentErrorDomain = @"SKDocumentErrorDomain";
 
+#define SKDisableExportAttributesKey @"SKDisableExportAttributes"
+
 #define TEMPLATES_FOLDER_NAME @"Templates"
 
 @implementation NSDocument (SKExtensions)
@@ -136,11 +138,11 @@ enum { SKAddBookmarkTypeBookmark, SKAddBookmarkTypeSetup, SKAddBookmarkTypeSessi
 
 - (NSArray *)notes { return nil; }
 
-static NSSet *richTextTypes() {
+static BOOL isRichTextType(NSString *templateFile) {
     static NSSet *types = nil;
     if (types == nil)
-        types = [[NSSet alloc] initWithObjects:@"rtf", @"doc", @"docx", @"odt", @"rtfd", nil];
-    return types;
+        types = [[NSSet alloc] initWithObjects:@"rtf", @"doc", @"docx", @"odt", @"webarchive", @"rtfd", nil];
+    return [types containsObject:[[templateFile pathExtension] lowercaseString]];
 }
 
 - (NSData *)notesData {
@@ -149,9 +151,8 @@ static NSSet *richTextTypes() {
 }
 
 - (NSString *)notesStringUsingTemplateFile:(NSString *)templateFile {
-    NSString *fileType = [[templateFile pathExtension] lowercaseString];
     NSString *string = nil;
-    if ([richTextTypes() containsObject:fileType] == NO) {
+    if (isRichTextType(templateFile) == NO) {
         NSString *templatePath = [[NSFileManager defaultManager] pathForApplicationSupportFile:[templateFile stringByDeletingPathExtension] ofType:[templateFile pathExtension] inDirectory:TEMPLATES_FOLDER_NAME];
         NSError *error = nil;
         NSString *templateString = [[NSString alloc] initWithContentsOfFile:templatePath encoding:NSUTF8StringEncoding error:&error];
@@ -162,14 +163,18 @@ static NSSet *richTextTypes() {
 }
 
 - (NSData *)notesDataUsingTemplateFile:(NSString *)templateFile {
-    NSString *fileType = [[templateFile pathExtension] lowercaseString];
     NSData *data = nil;
-    if ([richTextTypes() containsObject:fileType]) {
+    if (isRichTextType(templateFile)) {
         NSString *templatePath = [[NSFileManager defaultManager] pathForApplicationSupportFile:[templateFile stringByDeletingPathExtension] ofType:[templateFile pathExtension] inDirectory:TEMPLATES_FOLDER_NAME];
         NSDictionary *docAttributes = nil;
         NSError *error = nil;
         NSAttributedString *templateAttrString = [[NSAttributedString alloc] initWithPath:templatePath documentAttributes:&docAttributes];
         NSAttributedString *attrString = [SKTemplateParser attributedStringByParsingTemplateAttributedString:templateAttrString usingObject:self];
+        if ([[NSUserDefaults standardUserDefaults] boolForKey:SKDisableExportAttributesKey] == NO) {
+            NSMutableDictionary *mutableAttributes = [[docAttributes mutableCopy] autorelease];
+            [mutableAttributes addEntriesFromDictionary:[NSDictionary dictionaryWithObjectsAndKeys:NSFullUserName(), NSAuthorDocumentAttribute, [NSDate date], NSCreationTimeDocumentAttribute, [[[[self fileURL] path] lastPathComponent] stringByDeletingPathExtension], NSTitleDocumentAttribute, nil]];
+            docAttributes = mutableAttributes;
+        }
         data = [attrString dataFromRange:NSMakeRange(0, [attrString length]) documentAttributes:docAttributes error:&error];
         [templateAttrString release];
     } else {
@@ -185,6 +190,11 @@ static NSSet *richTextTypes() {
         NSDictionary *docAttributes = nil;
         NSAttributedString *templateAttrString = [[NSAttributedString alloc] initWithPath:templatePath documentAttributes:&docAttributes];
         NSAttributedString *attrString = [SKTemplateParser attributedStringByParsingTemplateAttributedString:templateAttrString usingObject:self];
+        if ([[NSUserDefaults standardUserDefaults] boolForKey:SKDisableExportAttributesKey] == NO) {
+            NSMutableDictionary *mutableAttributes = [[docAttributes mutableCopy] autorelease];
+            [mutableAttributes addEntriesFromDictionary:[NSDictionary dictionaryWithObjectsAndKeys:NSFullUserName(), NSAuthorDocumentAttribute, [NSDate date], NSCreationTimeDocumentAttribute, [[[[self fileURL] path] lastPathComponent] stringByDeletingPathExtension], NSTitleDocumentAttribute, nil]];
+            docAttributes = mutableAttributes;
+        }
         fileWrapper = [attrString RTFDFileWrapperFromRange:NSMakeRange(0, [attrString length]) documentAttributes:docAttributes];
         [templateAttrString release];
     }
