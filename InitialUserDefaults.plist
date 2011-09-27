@@ -41,6 +41,8 @@
 		<false/>
 		<key>SKSnapshotsOnTop</key>
 		<false/>
+		<key>SKSecondaryViewDrag</key>
+		<true/>
 		<key>SKSnapshotThumbnailSize</key>
 		<real>128</real>
 		<key>SKThumbnailSize</key>
