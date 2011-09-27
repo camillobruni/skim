@@ -87,6 +87,7 @@ static CGFloat SKDefaultScaleMenuFactors[] = {0.0, 0.0, 0.1, 0.2, 0.25, 0.35, 0.
     pagePopUpButton = nil;
     synchronizedPDFView = nil;
     synchronizeZoom = NO;
+    forceDrag = NO;
     pinchZoomFactor = 1.0;
     
     [self makePopUpButtons];
@@ -540,7 +541,34 @@ static void sizePopUpToItemAtIndex(NSPopUpButton *popUpButton, NSUInteger anInde
 
 #pragma mark Dragging
 
+- (BOOL) forceDrag {
+    // invert the dragging behavior when space is pressed
+    if (forceDrag) {
+        return ![[NSUserDefaults standardUserDefaults] boolForKey:SKSecondaryViewDrag];
+    }
+    return [[NSUserDefaults standardUserDefaults] boolForKey:SKSecondaryViewDrag];
+}
+
+- (void)keyDown:(NSEvent *)theEvent{
+    if ([theEvent keyCode] == 0x31) {
+        forceDrag = YES;
+    }
+    return [super keyUp:theEvent];
+}
+
+- (void)keyUp:(NSEvent *)theEvent {
+    if ([theEvent keyCode] == 0x313) {
+        forceDrag = NO;
+    }
+    return [super keyUp:theEvent];
+}
+
 - (void)mouseDown:(NSEvent *)theEvent{
+    
+    if (![self forceDrag]) {
+        return [super mouseDown:theEvent];
+    }
+    
     [[self window] makeFirstResponder:self];
 	
     NSUInteger modifiers = [theEvent standardModifierFlags];
@@ -591,11 +619,17 @@ static void sizePopUpToItemAtIndex(NSPopUpButton *popUpButton, NSUInteger anInde
 }
 
 - (void)mouseUp:(NSEvent *)theEvent{
+    if (![self forceDrag]) {
+        return [super mouseUp:theEvent];
+    }
     [NSCursor pop];
     [self performSelector:@selector(mouseMoved:) withObject:theEvent afterDelay:0];
 }
 
 - (void)mouseMoved:(NSEvent *)theEvent {
+    if (![self forceDrag]) {
+        return [super mouseMoved:theEvent];
+    }
 	NSView *view = [self documentView];
     NSPoint mouseLoc = [view convertPoint:[theEvent locationInWindow] fromView:nil];
     if (NSMouseInRect(mouseLoc, [view visibleRect], [view isFlipped]))
@@ -605,6 +639,9 @@ static void sizePopUpToItemAtIndex(NSPopUpButton *popUpButton, NSUInteger anInde
 }
 
 - (void)mouseDragged:(NSEvent *)theEvent {
+    if (![self forceDrag]) {
+        return [super mouseDragged:theEvent];
+    }
 	NSPoint initialLocation = [theEvent locationInWindow];
 	NSRect visibleRect = [[self documentView] visibleRect];
 	BOOL keepGoing = YES;
