@@ -53,6 +53,7 @@ NSString *SKRememberLastPageViewedKey = @"SKRememberLastPageViewed";
 NSString *SKRememberSnapshotsKey = @"SKRememberSnapshots";
 NSString *SKAutoSaveSkimNotesKey = @"SKAutoSaveSkimNotes";
 NSString *SKSnapshotsOnTopKey = @"SKSnapshotsOnTop";
+NSString *SKSecondaryViewDrag = @"SKSecondaryViewDrag";
 NSString *SKSnapshotThumbnailSizeKey = @"SKSnapshotThumbnailSize";
 NSString *SKThumbnailSizeKey = @"SKThumbnailSize";
 NSString *SKLastToolModeKey = @"SKLastToolMode";

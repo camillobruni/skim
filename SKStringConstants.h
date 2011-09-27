@@ -52,6 +52,7 @@ extern NSString *SKRememberLastPageViewedKey;
 extern NSString *SKRememberSnapshotsKey;
 extern NSString *SKAutoSaveSkimNotesKey;
 extern NSString *SKSnapshotsOnTopKey;
+extern NSString *SKSecondaryViewDrag;
 extern NSString *SKSnapshotThumbnailSizeKey;
 extern NSString *SKThumbnailSizeKey;
 extern NSString *SKLastToolModeKey;
